@@ -6,7 +6,6 @@ interface LedMarqueeOrbProps {
   word: string
   speed?: number
   radius?: number
-  bandHeight?: number
   ledSpacing?: number
 }
 
@@ -14,7 +13,6 @@ export default function LedMarqueeOrb({
   word = 'ROADHERO',
   speed = 0.25,
   radius = 1,
-  bandHeight = 0.2,
   ledSpacing = 0.05,
 }: LedMarqueeOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null)
@@ -71,7 +69,6 @@ export default function LedMarqueeOrb({
       uniforms: {
         uTexture: { value: texture },
         uScrollOffset: { value: 0 },
-        uBandHeight: { value: bandHeight },
         uLedSpacing: { value: ledSpacing },
         uRadius: { value: radius },
         uTime: { value: 0 },
@@ -90,7 +87,6 @@ export default function LedMarqueeOrb({
       fragmentShader: `
         uniform sampler2D uTexture;
         uniform float uScrollOffset;
-        uniform float uBandHeight;
         uniform float uLedSpacing;
         uniform float uRadius;
         uniform float uTime;
@@ -101,25 +97,20 @@ export default function LedMarqueeOrb({
         void main() {
           // Convert world position to spherical coordinates
           vec3 pos = normalize(vWorldPosition);
-          float latitude = asin(pos.y); // -PI/2 to PI/2
-          
-          // Check if we're in the center band
-          float bandHalfHeight = uBandHeight * 0.5;
-          if (abs(latitude) > bandHalfHeight) {
-            // Outside band - render dark sphere
-            gl_FragColor = vec4(0.05, 0.05, 0.1, 1.0);
-            return;
-          }
-          
-          // Inside band - calculate longitude for texture sampling
+          float latitude = asin(pos.y); // -PI/2 to PI/2 (south pole to north pole)
           float longitude = atan(pos.z, pos.x); // -PI to PI
           float normalizedLongitude = (longitude + 3.14159) / (2.0 * 3.14159); // 0 to 1
           
-          // Apply scrolling offset
-          float scrolledU = mod(normalizedLongitude + uScrollOffset, 1.0);
+          // Calculate distance from equator (latitude 0) for row detection
+          // Latitude 0 = equator, which is our center row
+          float latitudeDistance = abs(latitude); // Distance from equator
           
-          // Sample texture
-          vec4 texColor = texture2D(uTexture, vec2(scrolledU, 0.5));
+          // Middle three rows: we want approximately 3 rows around the equator
+          // Convert latitude to a row-based threshold
+          // Each row is roughly uLedSpacing in normalized space
+          // For 3 rows, we want about 1.5 * row spacing from center
+          float rowThreshold = 0.15; // Approximately 3 rows worth (adjustable)
+          bool isInMessageRows = latitudeDistance <= rowThreshold;
           
           // Quantize UVs into LED grid for dot matrix effect
           float gridSize = 1.0 / uLedSpacing;
@@ -132,24 +123,40 @@ export default function LedMarqueeOrb({
           float dist = length(distFromCenter);
           float ledShape = smoothstep(maxDist, maxDist * 0.7, dist);
           
-          // Only show LEDs where text is present
-          float textMask = step(0.1, texColor.r);
+          // Sample texture only for middle rows
+          float textMask = 0.0;
+          if (isInMessageRows) {
+            // Apply scrolling offset for horizontal marquee
+            float scrolledU = mod(normalizedLongitude + uScrollOffset, 1.0);
+            vec4 texColor = texture2D(uTexture, vec2(scrolledU, 0.5));
+            textMask = step(0.1, texColor.r);
+          }
           
-          // LED colors: bright when text, dim when no text
+          // LED colors: bright when text in message rows, dim otherwise
           vec3 ledColor = mix(
-            vec3(0.1, 0.1, 0.15), // Dim background
-            vec3(0.0, 1.0, 0.3),  // Bright green LED
+            vec3(0.1, 0.1, 0.15), // Dim background LED
+            vec3(0.0, 1.0, 0.3),  // Bright green LED for text
             textMask * ledShape
           );
           
-          // Add emissive glow
+          // Always show LED grid, but only bright where text is
+          vec3 baseLedColor = mix(
+            vec3(0.05, 0.05, 0.1), // Very dim base sphere
+            vec3(0.1, 0.1, 0.15),  // Slightly brighter for LED grid
+            ledShape
+          );
+          
+          // Combine: show base LEDs everywhere, bright LEDs where text is
+          vec3 finalColor = mix(baseLedColor, ledColor, textMask);
+          
+          // Add emissive glow for text LEDs
           float emissive = textMask * ledShape * 2.0;
           
-          gl_FragColor = vec4(ledColor + vec3(emissive * 0.3), 1.0);
+          gl_FragColor = vec4(finalColor + vec3(emissive * 0.3), 1.0);
         }
       `,
     })
-  }, [texture, bandHeight, ledSpacing, radius])
+  }, [texture, ledSpacing, radius])
 
   // Update scroll offset and rotation
   useFrame((state: any, delta: number) => {

@@ -11,7 +11,7 @@ interface LedMarqueeOrbProps {
 
 export default function LedMarqueeOrb({
   word = 'ROADHERO',
-  speed = 0.25,
+  speed = 0.05,
   radius = 1,
   ledSpacing = 0.05,
 }: LedMarqueeOrbProps) {
@@ -123,7 +123,7 @@ export default function LedMarqueeOrb({
           float dist = length(distFromCenter);
           float ledShape = smoothstep(maxDist, maxDist * 0.7, dist);
           
-          // Sample texture only for middle rows
+          // Sample texture only for middle rows to determine if text is present
           float textMask = 0.0;
           if (isInMessageRows) {
             // Apply scrolling offset for horizontal marquee
@@ -132,38 +132,37 @@ export default function LedMarqueeOrb({
             textMask = step(0.1, texColor.r);
           }
           
-          // LED colors: bright when text in message rows, dim otherwise
-          vec3 ledColor = mix(
-            vec3(0.1, 0.1, 0.15), // Dim background LED
-            vec3(0.0, 1.0, 0.3),  // Bright green LED for text
-            textMask * ledShape
-          );
+          // Always show LED bulbs across the entire globe
+          // ledShape determines the circular LED bulb shape (0 = black space, 1 = center of bulb)
           
-          // Always show LED grid, but only bright where text is
-          vec3 baseLedColor = mix(
-            vec3(0.05, 0.05, 0.1), // Very dim base sphere
-            vec3(0.1, 0.1, 0.15),  // Slightly brighter for LED grid
+          // Dim LED color for all bulbs
+          vec3 dimLedColor = vec3(0.1, 0.15, 0.1); // Dim green
+          
+          // Bright LED color for message bulbs
+          vec3 brightLedColor = vec3(0.0, 1.0, 0.3); // Bright green
+          
+          // Mix between dim and bright based on text mask
+          vec3 ledColor = mix(dimLedColor, brightLedColor, textMask);
+          
+          // Apply LED shape - this creates the circular bulbs with black space between
+          vec3 finalColor = mix(
+            vec3(0.0, 0.0, 0.0), // Black space between bulbs
+            ledColor,             // LED color (dim or bright)
             ledShape
           );
           
-          // Combine: show base LEDs everywhere, bright LEDs where text is
-          vec3 finalColor = mix(baseLedColor, ledColor, textMask);
+          // Add emissive glow for bright message LEDs
+          float emissive = textMask * ledShape * 1.5;
           
-          // Add emissive glow for text LEDs
-          float emissive = textMask * ledShape * 2.0;
-          
-          gl_FragColor = vec4(finalColor + vec3(emissive * 0.3), 1.0);
+          gl_FragColor = vec4(finalColor + vec3(emissive * 0.2), 1.0);
         }
       `,
     })
   }, [texture, ledSpacing, radius])
 
-  // Update scroll offset and rotation
+  // Update scroll offset (no rotation)
   useFrame((state: any, delta: number) => {
     if (meshRef.current) {
-      // Rotate the orb slowly
-      meshRef.current.rotation.y += delta * 0.1
-      
       // Update scroll offset for marquee effect
       scrollOffsetRef.current += delta * speed
       if (scrollOffsetRef.current >= 1.0) {

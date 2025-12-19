@@ -16,7 +16,12 @@ function App() {
         <Environment preset="city" />
 
         {/* Main orb component */}
-        <LedMarqueeOrb word="ROADHERO" />
+        <LedMarqueeOrb 
+          word="GO DAWGS!!" 
+          speed={0.05}
+          dimColor="#330000"
+          brightColor="#cc0000"
+        />
 
         {/* Orbit controls for camera interaction */}
         <OrbitControls

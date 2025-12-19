@@ -8,6 +8,8 @@ interface LedMarqueeOrbProps {
   radius?: number
   ledSpacing?: number
   columnSpacing?: number
+  dimColor?: string | THREE.Color
+  brightColor?: string | THREE.Color
 }
 
 export default function LedMarqueeOrb({
@@ -16,6 +18,8 @@ export default function LedMarqueeOrb({
   radius = 1,
   ledSpacing = 0.0075,
   columnSpacing = 0.005,
+  dimColor = '#1a261a',
+  brightColor = '#00ff4d',
 }: LedMarqueeOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const scrollOffsetRef = useRef(0)
@@ -146,6 +150,17 @@ export default function LedMarqueeOrb({
     return matrixToTexture(ledMatrix, rows, cols)
   }, [ledMatrix, rows, cols])
 
+  // Convert color props to Vector3 for shader
+  const dimColorVec = useMemo(() => {
+    const color = new THREE.Color(dimColor)
+    return new THREE.Vector3(color.r, color.g, color.b)
+  }, [dimColor])
+
+  const brightColorVec = useMemo(() => {
+    const color = new THREE.Color(brightColor)
+    return new THREE.Vector3(color.r, color.g, color.b)
+  }, [brightColor])
+
   // Shader material for LED effect
   const material = useMemo(() => {
     if (!matrixTexture) return null
@@ -160,6 +175,8 @@ export default function LedMarqueeOrb({
         uTime: { value: 0 },
         uMatrixRows: { value: rows },
         uMatrixCols: { value: cols },
+        uDimColor: { value: dimColorVec },
+        uBrightColor: { value: brightColorVec },
       },
       vertexShader: `
         varying vec3 vWorldPosition;
@@ -181,6 +198,8 @@ export default function LedMarqueeOrb({
         uniform float uTime;
         uniform float uMatrixRows;
         uniform float uMatrixCols;
+        uniform vec3 uDimColor;
+        uniform vec3 uBrightColor;
         
         varying vec3 vWorldPosition;
         varying vec2 vUv;
@@ -229,11 +248,9 @@ export default function LedMarqueeOrb({
           float dist = length(distFromCenter);
           float ledShape = smoothstep(maxDist, maxDist * 0.7, dist);
           
-          // Dim LED color for all bulbs
-          vec3 dimLedColor = vec3(0.1, 0.15, 0.1); // Dim green
-          
-          // Bright LED color for message bulbs
-          vec3 brightLedColor = vec3(0.0, 1.0, 0.3); // Bright green
+          // Use color uniforms from props
+          vec3 dimLedColor = uDimColor;
+          vec3 brightLedColor = uBrightColor;
           
           // Mix between dim and bright based on matrix state
           vec3 ledColor = mix(dimLedColor, brightLedColor, ledState);
@@ -252,7 +269,7 @@ export default function LedMarqueeOrb({
         }
       `,
     })
-  }, [matrixTexture, ledSpacing, columnSpacing, radius, rows, cols])
+  }, [matrixTexture, ledSpacing, columnSpacing, radius, rows, cols, dimColorVec, brightColorVec])
 
   // Update scroll offset and refresh matrix
   useFrame((state: any, delta: number) => {

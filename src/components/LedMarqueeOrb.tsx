@@ -13,7 +13,7 @@ export default function LedMarqueeOrb({
   word = 'ROADHERO',
   speed = 0.05,
   radius = 1,
-  ledSpacing = 0.05,
+  ledSpacing = 0.03,
 }: LedMarqueeOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const scrollOffsetRef = useRef(0)
@@ -117,7 +117,7 @@ export default function LedMarqueeOrb({
           vec2 gridUv = floor(vUv * gridSize) / gridSize;
           vec2 gridCenter = gridUv + vec2(uLedSpacing * 0.5);
           vec2 distFromCenter = abs(vUv - gridCenter);
-          float maxDist = uLedSpacing * 0.4;
+          float maxDist = uLedSpacing * 0.2; // Smaller bulbs for denser grid
           
           // Create circular LED dots
           float dist = length(distFromCenter);

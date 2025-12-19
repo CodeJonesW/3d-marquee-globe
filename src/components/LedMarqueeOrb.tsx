@@ -102,7 +102,8 @@ export default function LedMarqueeOrb({
           const col = Math.floor(normalizedX * cols)
 
           // Map canvas Y to matrix rows (only in message area)
-          const normalizedY = canvasY / canvasHeight // 0 to 1
+          // Flip Y coordinate: canvas top (Y=0) should map to higher row numbers (north)
+          const normalizedY = 1.0 - (canvasY / canvasHeight) // 1 to 0 (flipped)
           const messageRow = Math.floor(normalizedY * messageRows)
           const row = messageRowStart + messageRow
 
@@ -198,7 +199,8 @@ export default function LedMarqueeOrb({
           
           // Longitude: -PI to PI -> col 0 to uMatrixCols-1
           // Apply scroll offset for marquee effect
-          float normalizedLon = (longitude + 3.14159) / (2.0 * 3.14159); // 0 to 1
+          // Flip longitude direction to fix backwards text
+          float normalizedLon = 1.0 - ((longitude + 3.14159) / (2.0 * 3.14159)); // 1 to 0 (flipped)
           float scrolledLon = mod(normalizedLon + uScrollOffset, 1.0);
           float col = floor(scrolledLon * uMatrixCols);
           col = clamp(col, 0.0, uMatrixCols - 1.0);

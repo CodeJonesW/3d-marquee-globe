@@ -14,8 +14,8 @@ export default function LedMarqueeOrb({
   word = 'ROADHERO',
   speed = 0.05,
   radius = 1,
-  ledSpacing = 0.015,
-  columnSpacing = 0.01,
+  ledSpacing = 0.0075,
+  columnSpacing = 0.005,
 }: LedMarqueeOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const scrollOffsetRef = useRef(0)

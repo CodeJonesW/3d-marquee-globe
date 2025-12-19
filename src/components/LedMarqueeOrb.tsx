@@ -19,62 +19,146 @@ export default function LedMarqueeOrb({
 }: LedMarqueeOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const scrollOffsetRef = useRef(0)
+  const matrixRef = useRef<Uint8Array | null>(null)
+  const matrixRowsRef = useRef(0)
+  const matrixColsRef = useRef(0)
 
-  // Create LED texture from word text
-  const texture = useMemo(() => {
+  // Calculate matrix dimensions
+  // Rows = latitude bands from pole to pole (π radians total)
+  // Cols = longitude positions around sphere (2π radians total)
+  const matrixDimensions = useMemo(() => {
+    const rows = Math.ceil(Math.PI / ledSpacing)
+    const cols = Math.ceil((2 * Math.PI) / columnSpacing)
+    return { rows, cols }
+  }, [ledSpacing, columnSpacing])
+
+
+  // Create empty LED matrix
+  const createLedMatrix = (rows: number, cols: number): Uint8Array => {
+    return new Uint8Array(rows * cols).fill(0)
+  }
+
+  // Map text to matrix by rendering to canvas and sampling pixels
+  const mapTextToMatrix = (
+    text: string,
+    matrix: Uint8Array,
+    rows: number,
+    cols: number
+  ) => {
+    // Clear matrix first
+    matrix.fill(0)
+
+    // Create canvas to render text
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
-    if (!ctx) return null
+    if (!ctx) return
 
-    // Set canvas size - wider to allow seamless wrapping
-    const width = 2048
-    const height = 256
-    canvas.width = width
-    canvas.height = height
+    // Canvas size - make it wide enough for text and wrapping
+    const canvasWidth = 2048
+    const canvasHeight = 256
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
 
     // Fill with black background
     ctx.fillStyle = '#000000'
-    ctx.fillRect(0, 0, width, height)
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-    // Configure text style for LED matrix look
+    // Configure text style
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 120px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
-    // Draw the word multiple times for seamless wrapping
-    const textWidth = ctx.measureText(word).width
-    const spacing = textWidth + 200 // Space between repetitions
-    const repetitions = Math.ceil(width / spacing) + 2
+    // Draw text multiple times for seamless wrapping
+    const textWidth = ctx.measureText(text).width
+    const spacing = textWidth + 200
+    const repetitions = Math.ceil(canvasWidth / spacing) + 2
 
     for (let i = -1; i < repetitions; i++) {
-      const x = width / 2 + i * spacing
-      ctx.fillText(word, x, height / 2)
+      const x = canvasWidth / 2 + i * spacing
+      ctx.fillText(text, x, canvasHeight / 2)
     }
 
-    // Convert to texture
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.wrapS = THREE.RepeatWrapping
-    texture.wrapT = THREE.ClampToEdgeWrapping
-    texture.minFilter = THREE.LinearFilter
-    texture.magFilter = THREE.LinearFilter
-    texture.needsUpdate = true
+    // Get image data
+    const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight)
+    const data = imageData.data
 
+    // Map canvas pixels to matrix cells
+    // We'll focus on the middle rows (around equator) for the message
+    const messageRowStart = Math.floor(rows * 0.4) // Start at 40% from top
+    const messageRowEnd = Math.floor(rows * 0.6) // End at 60% from top
+    const messageRows = messageRowEnd - messageRowStart
+
+    // For each pixel in the rendered text
+    for (let canvasY = 0; canvasY < canvasHeight; canvasY++) {
+      for (let canvasX = 0; canvasX < canvasWidth; canvasX++) {
+        const pixelIndex = (canvasY * canvasWidth + canvasX) * 4
+        const r = data[pixelIndex]
+
+        // If pixel is white (or near white), mark corresponding matrix cells
+        if (r > 128) {
+          // Map canvas X to matrix column
+          const normalizedX = canvasX / canvasWidth // 0 to 1
+          const col = Math.floor(normalizedX * cols)
+
+          // Map canvas Y to matrix rows (only in message area)
+          const normalizedY = canvasY / canvasHeight // 0 to 1
+          const messageRow = Math.floor(normalizedY * messageRows)
+          const row = messageRowStart + messageRow
+
+          if (row >= 0 && row < rows && col >= 0 && col < cols) {
+            matrix[row * cols + col] = 1
+          }
+        }
+      }
+    }
+  }
+
+  // Convert matrix to Three.js DataTexture
+  const matrixToTexture = (matrix: Uint8Array, rows: number, cols: number): THREE.DataTexture => {
+    // Create texture data - each pixel represents one matrix cell
+    const textureData = new Uint8Array(rows * cols)
+    for (let i = 0; i < matrix.length; i++) {
+      textureData[i] = matrix[i] * 255 // Convert 0/1 to 0/255
+    }
+
+    const texture = new THREE.DataTexture(textureData, cols, rows, THREE.RedFormat)
+    texture.needsUpdate = true
     return texture
-  }, [word])
+  }
+
+  // Initialize matrix
+  const { rows, cols } = matrixDimensions
+  matrixRowsRef.current = rows
+  matrixColsRef.current = cols
+
+  // Create and populate matrix
+  const ledMatrix = useMemo(() => {
+    const matrix = createLedMatrix(rows, cols)
+    mapTextToMatrix(word, matrix, rows, cols)
+    matrixRef.current = matrix
+    return matrix
+  }, [word, rows, cols])
+
+  // Convert matrix to texture
+  const matrixTexture = useMemo(() => {
+    return matrixToTexture(ledMatrix, rows, cols)
+  }, [ledMatrix, rows, cols])
 
   // Shader material for LED effect
   const material = useMemo(() => {
-    if (!texture) return null
+    if (!matrixTexture) return null
 
     return new THREE.ShaderMaterial({
       uniforms: {
-        uTexture: { value: texture },
+        uLedMatrix: { value: matrixTexture },
         uScrollOffset: { value: 0 },
         uLedSpacing: { value: ledSpacing },
         uColumnSpacing: { value: columnSpacing },
         uRadius: { value: radius },
         uTime: { value: 0 },
+        uMatrixRows: { value: rows },
+        uMatrixCols: { value: cols },
       },
       vertexShader: `
         varying vec3 vWorldPosition;
@@ -88,12 +172,14 @@ export default function LedMarqueeOrb({
         }
       `,
       fragmentShader: `
-        uniform sampler2D uTexture;
+        uniform sampler2D uLedMatrix;
         uniform float uScrollOffset;
         uniform float uLedSpacing;
         uniform float uColumnSpacing;
         uniform float uRadius;
         uniform float uTime;
+        uniform float uMatrixRows;
+        uniform float uMatrixCols;
         
         varying vec3 vWorldPosition;
         varying vec2 vUv;
@@ -103,21 +189,27 @@ export default function LedMarqueeOrb({
           vec3 pos = normalize(vWorldPosition);
           float latitude = asin(pos.y); // -PI/2 to PI/2 (south pole to north pole)
           float longitude = atan(pos.z, pos.x); // -PI to PI
-          float normalizedLongitude = (longitude + 3.14159) / (2.0 * 3.14159); // 0 to 1
           
-          // Calculate distance from equator (latitude 0) for row detection
-          // Latitude 0 = equator, which is our center row
-          float latitudeDistance = abs(latitude); // Distance from equator
+          // Calculate matrix coordinates from latitude/longitude
+          // Latitude: -PI/2 to PI/2 -> row 0 to uMatrixRows-1
+          float normalizedLat = (latitude + 1.5708) / 3.14159; // 0 to 1
+          float row = floor(normalizedLat * uMatrixRows);
+          row = clamp(row, 0.0, uMatrixRows - 1.0);
           
-          // Middle three rows: we want approximately 3 rows around the equator
-          // Convert latitude to a row-based threshold
-          // Each row is roughly uLedSpacing in normalized space
-          // For 3 rows, we want about 1.5 * row spacing from center
-          float rowThreshold = 0.15; // Approximately 3 rows worth (adjustable)
-          bool isInMessageRows = latitudeDistance <= rowThreshold;
+          // Longitude: -PI to PI -> col 0 to uMatrixCols-1
+          // Apply scroll offset for marquee effect
+          float normalizedLon = (longitude + 3.14159) / (2.0 * 3.14159); // 0 to 1
+          float scrolledLon = mod(normalizedLon + uScrollOffset, 1.0);
+          float col = floor(scrolledLon * uMatrixCols);
+          col = clamp(col, 0.0, uMatrixCols - 1.0);
+          
+          // Sample matrix texture at calculated coordinates
+          // Texture coordinates: (col/uMatrixCols, row/uMatrixRows)
+          vec2 matrixUv = vec2(col / uMatrixCols, row / uMatrixRows);
+          vec4 matrixValue = texture2D(uLedMatrix, matrixUv);
+          float ledState = matrixValue.r; // 0.0 (off) or 1.0 (on)
           
           // Quantize UVs into LED grid for dot matrix effect
-          // Use different spacing for columns (U) vs rows (V)
           float columnGridSize = 1.0 / uColumnSpacing;
           float rowGridSize = 1.0 / uLedSpacing;
           vec2 gridUv = vec2(
@@ -129,24 +221,11 @@ export default function LedMarqueeOrb({
             gridUv.y + uLedSpacing * 0.5
           );
           vec2 distFromCenter = abs(vUv - gridCenter);
-          // Use column spacing for horizontal size, led spacing for vertical
-          float maxDist = min(uColumnSpacing, uLedSpacing) * 0.2; // Smaller bulbs for denser grid
+          float maxDist = min(uColumnSpacing, uLedSpacing) * 0.2;
           
           // Create circular LED dots
           float dist = length(distFromCenter);
           float ledShape = smoothstep(maxDist, maxDist * 0.7, dist);
-          
-          // Sample texture only for middle rows to determine if text is present
-          float textMask = 0.0;
-          if (isInMessageRows) {
-            // Apply scrolling offset for horizontal marquee
-            float scrolledU = mod(normalizedLongitude + uScrollOffset, 1.0);
-            vec4 texColor = texture2D(uTexture, vec2(scrolledU, 0.5));
-            textMask = step(0.1, texColor.r);
-          }
-          
-          // Always show LED bulbs across the entire globe
-          // ledShape determines the circular LED bulb shape (0 = black space, 1 = center of bulb)
           
           // Dim LED color for all bulbs
           vec3 dimLedColor = vec3(0.1, 0.15, 0.1); // Dim green
@@ -154,8 +233,8 @@ export default function LedMarqueeOrb({
           // Bright LED color for message bulbs
           vec3 brightLedColor = vec3(0.0, 1.0, 0.3); // Bright green
           
-          // Mix between dim and bright based on text mask
-          vec3 ledColor = mix(dimLedColor, brightLedColor, textMask);
+          // Mix between dim and bright based on matrix state
+          vec3 ledColor = mix(dimLedColor, brightLedColor, ledState);
           
           // Apply LED shape - this creates the circular bulbs with black space between
           vec3 finalColor = mix(
@@ -165,24 +244,26 @@ export default function LedMarqueeOrb({
           );
           
           // Add emissive glow for bright message LEDs
-          float emissive = textMask * ledShape * 1.5;
+          float emissive = ledState * ledShape * 1.5;
           
           gl_FragColor = vec4(finalColor + vec3(emissive * 0.2), 1.0);
         }
       `,
     })
-  }, [texture, ledSpacing, columnSpacing, radius])
+  }, [matrixTexture, ledSpacing, columnSpacing, radius, rows, cols])
 
-  // Update scroll offset (no rotation)
+  // Update scroll offset and refresh matrix
   useFrame((state: any, delta: number) => {
-    if (meshRef.current) {
+    if (meshRef.current && matrixRef.current) {
       // Update scroll offset for marquee effect
       scrollOffsetRef.current += delta * speed
       if (scrollOffsetRef.current >= 1.0) {
         scrollOffsetRef.current -= 1.0
       }
-      
-      // Update shader uniform
+
+      // Matrix doesn't need to be updated every frame - scroll is handled in shader
+
+      // Update shader uniforms (texture only needs update when matrix changes, not every frame)
       if (material && 'uniforms' in material) {
         material.uniforms.uScrollOffset.value = scrollOffsetRef.current
         material.uniforms.uTime.value = state.clock.elapsedTime
@@ -190,13 +271,26 @@ export default function LedMarqueeOrb({
     }
   })
 
-  // Update texture when word changes
+  // Update matrix when word changes
   useEffect(() => {
-    if (texture && material && 'uniforms' in material) {
-      material.uniforms.uTexture.value = texture
-      material.needsUpdate = true
+    if (matrixRef.current) {
+      mapTextToMatrix(
+        word,
+        matrixRef.current,
+        matrixRowsRef.current,
+        matrixColsRef.current
+      )
+      if (material && 'uniforms' in material) {
+        const newTexture = matrixToTexture(
+          matrixRef.current,
+          matrixRowsRef.current,
+          matrixColsRef.current
+        )
+        material.uniforms.uLedMatrix.value = newTexture
+        material.needsUpdate = true
+      }
     }
-  }, [texture, material])
+  }, [word, material])
 
   if (!material) return null
 
@@ -206,4 +300,3 @@ export default function LedMarqueeOrb({
     </mesh>
   )
 }
-

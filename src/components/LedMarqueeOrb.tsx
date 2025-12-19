@@ -7,6 +7,7 @@ interface LedMarqueeOrbProps {
   speed?: number
   radius?: number
   ledSpacing?: number
+  columnSpacing?: number
 }
 
 export default function LedMarqueeOrb({
@@ -14,6 +15,7 @@ export default function LedMarqueeOrb({
   speed = 0.05,
   radius = 1,
   ledSpacing = 0.03,
+  columnSpacing = 0.02,
 }: LedMarqueeOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const scrollOffsetRef = useRef(0)
@@ -70,6 +72,7 @@ export default function LedMarqueeOrb({
         uTexture: { value: texture },
         uScrollOffset: { value: 0 },
         uLedSpacing: { value: ledSpacing },
+        uColumnSpacing: { value: columnSpacing },
         uRadius: { value: radius },
         uTime: { value: 0 },
       },
@@ -88,6 +91,7 @@ export default function LedMarqueeOrb({
         uniform sampler2D uTexture;
         uniform float uScrollOffset;
         uniform float uLedSpacing;
+        uniform float uColumnSpacing;
         uniform float uRadius;
         uniform float uTime;
         
@@ -113,11 +117,20 @@ export default function LedMarqueeOrb({
           bool isInMessageRows = latitudeDistance <= rowThreshold;
           
           // Quantize UVs into LED grid for dot matrix effect
-          float gridSize = 1.0 / uLedSpacing;
-          vec2 gridUv = floor(vUv * gridSize) / gridSize;
-          vec2 gridCenter = gridUv + vec2(uLedSpacing * 0.5);
+          // Use different spacing for columns (U) vs rows (V)
+          float columnGridSize = 1.0 / uColumnSpacing;
+          float rowGridSize = 1.0 / uLedSpacing;
+          vec2 gridUv = vec2(
+            floor(vUv.x * columnGridSize) / columnGridSize,
+            floor(vUv.y * rowGridSize) / rowGridSize
+          );
+          vec2 gridCenter = vec2(
+            gridUv.x + uColumnSpacing * 0.5,
+            gridUv.y + uLedSpacing * 0.5
+          );
           vec2 distFromCenter = abs(vUv - gridCenter);
-          float maxDist = uLedSpacing * 0.2; // Smaller bulbs for denser grid
+          // Use column spacing for horizontal size, led spacing for vertical
+          float maxDist = min(uColumnSpacing, uLedSpacing) * 0.2; // Smaller bulbs for denser grid
           
           // Create circular LED dots
           float dist = length(distFromCenter);
@@ -158,7 +171,7 @@ export default function LedMarqueeOrb({
         }
       `,
     })
-  }, [texture, ledSpacing, radius])
+  }, [texture, ledSpacing, columnSpacing, radius])
 
   // Update scroll offset (no rotation)
   useFrame((state: any, delta: number) => {

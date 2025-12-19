@@ -17,10 +17,10 @@ function App() {
 
         {/* Main orb component */}
         <LedMarqueeOrb 
-          word="GO DAWGS!!" 
-          speed={0.05}
-          dimColor="#330000"
-          brightColor="#cc0000"
+          word="GO DAWGS!! SIC EM!!" 
+          speed={0.125}
+          dimColor="#ff0000"
+          brightColor="#FFFFFF"
         />
 
         {/* Orbit controls for camera interaction */}

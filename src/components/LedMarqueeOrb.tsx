@@ -69,7 +69,7 @@ export default function LedMarqueeOrb({
 
     // Configure text style
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 120px monospace'
+    ctx.font = 'bold 80px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
@@ -93,6 +93,9 @@ export default function LedMarqueeOrb({
     const messageRowEnd = Math.floor(rows * 0.6) // End at 60% from top
     const messageRows = messageRowEnd - messageRowStart
 
+    // Calculate the width of one text instance for proper wrapping
+    const singleTextWidth = spacing
+
     // For each pixel in the rendered text
     for (let canvasY = 0; canvasY < canvasHeight; canvasY++) {
       for (let canvasX = 0; canvasX < canvasWidth; canvasX++) {
@@ -101,8 +104,10 @@ export default function LedMarqueeOrb({
 
         // If pixel is white (or near white), mark corresponding matrix cells
         if (r > 128) {
-          // Map canvas X to matrix column
-          const normalizedX = canvasX / canvasWidth // 0 to 1
+          // Map canvas X to matrix column, using modulo to wrap to single text instance
+          // This prevents overlapping/duplicated characters from multiple text repetitions
+          const wrappedX = canvasX % singleTextWidth
+          const normalizedX = wrappedX / singleTextWidth // 0 to 1 for one text instance
           const col = Math.floor(normalizedX * cols)
 
           // Map canvas Y to matrix rows (only in message area)

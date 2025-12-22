@@ -1,10 +1,6 @@
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment } from '@react-three/drei'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
-import LedMarqueeOrb from './components/LedMarqueeOrb'
 import { useState } from 'react'
+import { LedMarqueeOrbContainer } from './components/LedMarqueeOrbContainer'
 
-// Message and color configurations
 const messageConfigs = [
   {
     word: 'GO DAWGS!! SIC EM!!',
@@ -25,7 +21,7 @@ const messageConfigs = [
     brightColor: '#00ff41',
   },
   {
-    word: 'DAIRY QUEEN HAS THE BEST BURGER',
+    word: 'DAIRY QUEEN HAS THE BEST BURGERS',
     speed: 0.15,
     dimColor: '#1a0033',
     brightColor: '#ff6b35',
@@ -70,38 +66,12 @@ function App() {
       >
         {'>'}
       </button>
-
-      <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
-        gl={{ antialias: true, alpha: false }}
-      >
-        {/* Lighting and environment */}
-        <ambientLight intensity={0.3} />
-        <pointLight position={[10, 10, 10]} intensity={0.5} />
-        <Environment preset="city" />
-
-        {/* Main orb component */}
-        <LedMarqueeOrb 
-          word={currentConfig.word}
-          speed={currentConfig.speed} 
-          dimColor={currentConfig.dimColor}
-          brightColor={currentConfig.brightColor}
-        />
-
-        {/* Orbit controls for camera interaction */}
-        <OrbitControls
-          enablePan={false}
-          minDistance={3}
-          maxDistance={8}
-          minPolarAngle={Math.PI / 3}
-          maxPolarAngle={Math.PI - Math.PI / 3}
-        />
-
-        {/* Post-processing for bloom effect */}
-        <EffectComposer>
-          <Bloom intensity={1.5} luminanceThreshold={0.9} luminanceSmoothing={0.9} />
-        </EffectComposer>
-      </Canvas>
+      <LedMarqueeOrbContainer
+        word={currentConfig.word}
+        speed={currentConfig.speed}
+        dimColor={currentConfig.dimColor}
+        brightColor={currentConfig.brightColor}
+      />
     </div>
   )
 }

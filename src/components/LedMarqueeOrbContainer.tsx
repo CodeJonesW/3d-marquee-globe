@@ -16,7 +16,7 @@ export const LedMarqueeOrbContainer = ({ word, speed, dimColor, brightColor }: L
 return (
     <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: true }}
       >
         {/* Lighting and environment */}
         <ambientLight intensity={0.3} />

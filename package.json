@@ -1,22 +1,44 @@
 {
-  "name": "3d-orb-message",
-  "private": true,
-  "version": "0.0.0",
+  "name": "3d-marquee",
+  "version": "0.1.0",
   "type": "module",
+  "main": "./dist/3d-marquee.umd.js",
+  "module": "./dist/3d-marquee.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/3d-marquee.js",
+      "require": "./dist/3d-marquee.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:lib": "tsc -p tsconfig.build.json && vite build --mode library",
     "preview": "vite preview"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@react-three/drei": "^9.92.7",
+    "@react-three/fiber": "^8.15.11",
+    "@react-three/postprocessing": "^2.15.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "^0.158.0",
-    "@react-three/fiber": "^8.15.11",
+    "three": "^0.158.0"
+  },
+  "dependencies": {
     "@react-three/drei": "^9.92.7",
-    "@react-three/postprocessing": "^2.15.9"
+    "@react-three/fiber": "^8.15.11",
+    "@react-three/postprocessing": "^2.15.9",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.158.0"
   },
   "devDependencies": {
+    "@types/node": "^25.0.3",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/three": "^0.158.3",
@@ -25,4 +47,3 @@
     "vite": "^5.0.8"
   }
 }
-

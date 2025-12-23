@@ -4,7 +4,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import LedMarqueeOrb, { LedMarqueeOrbProps } from './LedMarqueeOrb'
 
 
-interface LedMarqueeOrbContainerProps extends LedMarqueeOrbProps {
+export interface LedMarqueeOrbContainerProps extends LedMarqueeOrbProps {
     word: string
     speed: number
     dimColor: string

@@ -4,6 +4,7 @@
   "type": "module",
   "main": "./dist/3d-marquee.umd.js",
   "module": "./dist/3d-marquee.es.js",
+  "browser": "./dist/3d-marquee.umd.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -20,7 +21,14 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:lib": "vite build --mode library && tsc -p tsconfig.build.json",
-    "preview": "vite preview"
+    "prepublishOnly": "npm run build:lib",
+    "preview": "vite preview",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version",
+    "publish:patch": "npm run version:patch && npm publish",
+    "publish:minor": "npm run version:minor && npm publish",
+    "publish:major": "npm run version:major && npm publish"
   },
   "peerDependencies": {
     "@react-three/drei": "^9.92.7 || ^10.0.0",

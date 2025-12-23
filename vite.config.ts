@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
               id === 'react' ||
               id === 'react-dom' ||
               id === 'react/jsx-runtime' ||
+              id === 'react/jsx-dev-runtime' ||
               id.startsWith('react/') ||
               id.startsWith('react-dom/') ||
               id === 'three' ||

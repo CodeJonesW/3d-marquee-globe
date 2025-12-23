@@ -1,6 +1,6 @@
 {
   "name": "3d-marquee",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "type": "module",
   "main": "./dist/3d-marquee.umd.js",
   "module": "./dist/3d-marquee.es.js",

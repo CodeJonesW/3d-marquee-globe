@@ -29,20 +29,18 @@
     "react-dom": "^18.2.0",
     "three": "^0.158.0"
   },
-  "dependencies": {
+  "devDependencies": {
     "@react-three/drei": "^9.92.7",
     "@react-three/fiber": "^8.15.11",
     "@react-three/postprocessing": "^2.15.9",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "three": "^0.158.0"
-  },
-  "devDependencies": {
     "@types/node": "^25.0.3",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/three": "^0.158.3",
     "@vitejs/plugin-react": "^4.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.158.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }

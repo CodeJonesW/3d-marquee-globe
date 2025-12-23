@@ -19,15 +19,24 @@ export default defineConfig(({ mode }) => {
           formats: ['es', 'umd'],
         },
         rollupOptions: {
-          external: [
-            'react',
-            'react-dom',
-            'react/jsx-runtime',
-            'three',
-            '@react-three/fiber',
-            '@react-three/drei',
-            '@react-three/postprocessing',
-          ],
+          external: (id) => {
+            // Externalize all React-related packages
+            return (
+              id === 'react' ||
+              id === 'react-dom' ||
+              id === 'react/jsx-runtime' ||
+              id.startsWith('react/') ||
+              id.startsWith('react-dom/') ||
+              id === 'three' ||
+              id.startsWith('three/') ||
+              id === '@react-three/fiber' ||
+              id.startsWith('@react-three/fiber/') ||
+              id === '@react-three/drei' ||
+              id.startsWith('@react-three/drei/') ||
+              id === '@react-three/postprocessing' ||
+              id.startsWith('@react-three/postprocessing/')
+            )
+          },
           output: {
             globals: {
               react: 'React',

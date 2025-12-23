@@ -13,7 +13,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "assets"
   ],
   "scripts": {
     "dev": "vite",

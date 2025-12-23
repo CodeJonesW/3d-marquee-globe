@@ -4,7 +4,11 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "./dist"
+    "declarationMap": true,
+    "outDir": "./dist",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
   },
-  "include": ["src/index.ts", "src/components"]
+  "include": ["src/index.ts", "src/components/**/*"]
 }
+

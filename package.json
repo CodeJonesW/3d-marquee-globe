@@ -3,11 +3,11 @@
   "version": "0.1.1",
   "type": "module",
   "main": "./dist/3d-marquee.umd.js",
-  "module": "./dist/3d-marquee.js",
+  "module": "./dist/3d-marquee.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/3d-marquee.js",
+      "import": "./dist/3d-marquee.es.js",
       "require": "./dist/3d-marquee.umd.js",
       "types": "./dist/index.d.ts"
     }
@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:lib": "tsc -p tsconfig.build.json && vite build --mode library",
+    "build:lib": "vite build --mode library && tsc -p tsconfig.build.json",
     "preview": "vite preview"
   },
   "peerDependencies": {

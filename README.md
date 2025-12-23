@@ -2,7 +2,7 @@
 
 A React library featuring a 3D rotating orb with a scrolling LED marquee effect. The word scrolls horizontally across the center band of the sphere, creating a seamless ticker display.
 
-![3D Marquee Preview](./assets/preview.png)
+![3D Marquee Preview](https://raw.githubusercontent.com/CodeJonesW/3d-marquee-globe/main/assets/preview.png)
 
 ## Installation
 

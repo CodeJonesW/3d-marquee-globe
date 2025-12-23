@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-interface LedMarqueeOrbProps {
+export interface LedMarqueeOrbProps {
   word: string
   speed?: number
   radius?: number
@@ -171,6 +171,7 @@ export default function LedMarqueeOrb({
     if (!matrixTexture) return null
 
     return new THREE.ShaderMaterial({
+      transparent: true,
       uniforms: {
         uLedMatrix: { value: matrixTexture },
         uScrollOffset: { value: 0 },
@@ -260,9 +261,9 @@ export default function LedMarqueeOrb({
           // Mix between dim and bright based on matrix state
           vec3 ledColor = mix(dimLedColor, brightLedColor, ledState);
           
-          // Apply LED shape - this creates the circular bulbs with black space between
+          // Apply LED shape - this creates the circular bulbs with transparent space between
           vec3 finalColor = mix(
-            vec3(0.0, 0.0, 0.0), // Black space between bulbs
+            vec3(0.0, 0.0, 0.0), // Black space between bulbs (will be transparent)
             ledColor,             // LED color (dim or bright)
             ledShape
           );
@@ -270,7 +271,11 @@ export default function LedMarqueeOrb({
           // Add emissive glow for bright message LEDs
           float emissive = ledState * ledShape * 1.5;
           
-          gl_FragColor = vec4(finalColor + vec3(emissive * 0.2), 1.0);
+          // Calculate alpha: transparent where there are no LEDs, opaque where LEDs are visible
+          // Use ledShape directly as alpha so LEDs are visible and space between is transparent
+          float alpha = ledShape;
+          
+          gl_FragColor = vec4(finalColor + vec3(emissive * 0.2), alpha);
         }
       `,
     })

@@ -6,16 +6,24 @@ A React library featuring a 3D rotating orb with a scrolling LED marquee effect.
 
 ## Installation
 
-Install the package and its peer dependencies:
+Install the package:
 
 ```bash
-npm install 3d-marquee @react-three/fiber @react-three/drei @react-three/postprocessing react react-dom three
+npm install 3d-marquee
+```
+
+**Note:** With npm 7+ and yarn, peer dependencies are automatically installed. If you're using npm 6 or earlier, you'll need to install the peer dependencies manually:
+
+```bash
+npm install 3d-marquee react react-dom three @react-three/fiber @react-three/drei @react-three/postprocessing
 ```
 
 ### Peer Dependencies
 
-- `react`: `^18.2.0 || ^19.0.0`
-- `react-dom`: `^18.2.0 || ^19.0.0`
+The following peer dependencies are required and will be automatically installed with npm 7+:
+
+- `react`: `^18.0.0 || ^19.0.0`
+- `react-dom`: `^18.0.0 || ^19.0.0`
 - `three`: `>=0.158.0`
 - `@react-three/fiber`: `^8.15.11 || ^9.0.0`
 - `@react-three/drei`: `^9.92.7 || ^10.0.0`

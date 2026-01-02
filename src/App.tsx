@@ -3,7 +3,7 @@ import { LedMarqueeOrbContainer } from './components/LedMarqueeOrbContainer'
 
 const messageConfigs = [
   {
-    word: 'GO DAWGS!! SIC EM!!',
+    word: 'Hello World',
     speed: 0.125,
     dimColor: '#ff0000',
     brightColor: '#FFFFFF',
